@@ -1,0 +1,6 @@
+ALTER TYPE "public"."participant_funding_status" ADD VALUE IF NOT EXISTS 'cancelled';--> statement-breakpoint
+CREATE TABLE "participant_funding_events" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "checkout_session_id" uuid NOT NULL, "member_id" uuid NOT NULL, "action" varchar(24) NOT NULL, "amount_cents" bigint NOT NULL, "idempotency_key" varchar(255) NOT NULL, "created_at" timestamp with time zone DEFAULT now() NOT NULL);--> statement-breakpoint
+ALTER TABLE "participant_funding_events" ADD CONSTRAINT "participant_funding_events_checkout_session_id_checkout_sessions_id_fk" FOREIGN KEY ("checkout_session_id") REFERENCES "public"."checkout_sessions"("id") ON DELETE restrict;--> statement-breakpoint
+ALTER TABLE "participant_funding_events" ADD CONSTRAINT "participant_funding_events_member_id_group_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."group_members"("id") ON DELETE restrict;--> statement-breakpoint
+CREATE UNIQUE INDEX "participant_funding_events_idempotency_unique" ON "participant_funding_events" USING btree ("idempotency_key");--> statement-breakpoint
+CREATE INDEX "participant_funding_events_session_index" ON "participant_funding_events" USING btree ("checkout_session_id");

@@ -1,126 +1,100 @@
-<div align="center">
-
 # WHOOSH
 
-### Group payments, settled together.
+WHOOSH coordinates a shared purchase without asking one person to front the whole amount. An organizer proposes a split, each participant explicitly consents and approves a separate PayPal Sandbox checkout, and WHOOSH reconciles the verified captures against one logical purchase.
 
-**A V1 sandbox for simulating shared purchases, group authorization, and automatic settlement.**
+This repository is a **hackathon prototype**. Northline Travel is a **simulated merchant**. Four independent PayPal Orders are not a native multi-payer PayPal Order, and their captures are not atomic. A verified capture does not establish that the PayPal buyer is the named group member. Do not deploy the payment or invitation routes publicly without real authentication and authorization.
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white) ![Status](https://img.shields.io/badge/status-V1%20prototype-8B5CF6)
+## What is implemented
 
-<br />
+- A React and TypeScript checkout for the fixed Northline Montreal Weekend Escape receipt: traveler passes **US$1,136**, cabin upgrade **US$100**, and shuttle **US$48**, totaling **US$1,284**.
+- Persistent groups, item-level or exact-contribution split previews, integer-cent reconciliation, spending-limit checks, organizer review, and participant-scoped consent links.
+- An optional AI purchasing assistant for item assignments. The model proposes intent; the API validates group members, prices, allocations, and permissions. Exact-contribution instructions such as "Jordan pays $350. Avery pays the same. Morgan pays $284. Sam covers the rest" use a deterministic local parser and are shown as shares of the whole receipt, without inventing item usage.
+- Four separate PayPal Orders v2 `CAPTURE` checkouts in Sandbox mode. Orders are linked to one WHOOSH checkout ID, use unique invoice IDs, and are verified for order, capture, amount, currency, and merchant/payee before counting as funded.
+- Persisted funding state, idempotent capture reconciliation, balanced USD ledger journals, partial-funding recovery, provider-verified refunds, and reversing journals.
+- One persistent **simulated** Northline booking. Full verified funding creates a durable funding-ready record; a separate confirmation operation checks all four shares before recording one booking acknowledgment.
+- A read-only WHOOSH Agent on Pay & Track that answers from checkout-status tools. It cannot approve, capture, refund, or change an allocation.
+- An older, separate CAD simulated-wallet and settlement sandbox. Its balances and obligations are not PayPal money.
 
-<img src="docs/images/whoosh-sandbox-demo.png" alt="WHOOSH sandbox interface" width="900" />
+No automated backup funding, pooled custody, real Northline reservation, or production merchant onboarding is included. A four-buyer PayPal Sandbox transaction should be treated as **unverified until run and inspected with the intended Sandbox accounts**.
 
-</div>
+## Project structure
 
-<br />
+| Path | Purpose |
+| --- | --- |
+| `apps/web` | React checkout, organizer dashboard, and participant views |
+| `apps/api` | Express API, AI interpretation, PayPal orchestration, merchant simulator, and ledger |
+| `packages/shared` | Integer-cent allocation, reconciliation, and permission rules |
+| `apps/api/src/db/migrations` | Additive PostgreSQL migrations |
 
-> **No real money moves here.** WHOOSH uses fictional members and simulated CAD balances to explore what it could look like if shared expenses were handled as part of the purchase itself—not reconciled afterward.
+## Run locally
 
-## The idea
+Use **Node.js 22 or 23**, npm, and PostgreSQL 17. Docker Compose supplies the development database. Keep `.env` and `.env.local` private; both are ignored by Git.
 
-Someone fronts dinner. Four people share it. Usually, the group spends the next few days chasing transfers and doing mental math.
-
-WHOOSH models a different flow: capture the group at authorization, split responsibility immediately, record the purchase in a ledger, and create the settlement obligations automatically.
-
-```text
-  $200 Uber Eats order
-
-  Sarah pays ──► WHOOSH authorizes & records ──► Each participant owes their share
-                                                      │
-                                                      ▼
-                                          Pending settlements are processed
-```
-
-## What’s in V1
-
-| | Feature | What it does |
-|:--:|---|---|
-| 👥 | **Private demo group** | Starts each browser with four fictional members and funded simulated wallets. |
-| 🧾 | **Group purchase flow** | Choose a merchant, amount, participants, and the member paying up front. |
-| ➗ | **Equal splits** | Calculates an even split, including accurate cent-level rounding. |
-| ✓ | **Authorization simulation** | Validates the payer’s balance before recording the purchase. |
-| 📒 | **Double-entry ledger** | Records successful purchases and settlements as balanced journal entries. |
-| ↔ | **Automatic obligations** | Creates a pending settlement from each participant to the payer. |
-| ⚡ | **Settlement simulations** | Process a successful payment—or test forced failures and insufficient funds. |
-| 🔎 | **Inspectable sandbox** | View API payloads, balance changes, activity, and the settlement queue as you go. |
-| ↻ | **Fresh reset** | Start over with a new isolated demo group anytime. |
-
-## A purchase in WHOOSH
-
-```text
-  1. Pick the group        2. Authorize the purchase       3. Settle obligations
-
-  Sarah, Jordan, Maya      Payer wallet is debited          Each participant pays
-  & Alex split $200        for the full $200                their $50 share to Sarah
-```
-
-The current V1 deliberately focuses on **equal splits** and the underlying accounting flow. That keeps the sandbox small enough to make the payment model easy to inspect.
-
-## Built with
-
-| Frontend | Backend | Data |
-|---|---|---|
-| React · TypeScript · Vite | Express · Zod | PostgreSQL · Drizzle ORM |
-
-The repository is a small monorepo: `apps/web` contains the interface, `apps/api` contains the API and ledger logic, and `packages/shared` holds shared domain and money utilities.
-
-## Run it locally
-
-**You’ll need:** Node.js 22+ and PostgreSQL—or Docker for the included local database.
-
-```bash
+```powershell
 npm install
 Copy-Item .env.example .env
 docker compose up -d postgres
 npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-Then open **http://localhost:5173**. The API runs at **http://localhost:3000**.
+Set `DATABASE_URL=postgres://whoosh:whoosh@localhost:5432/whoosh` in `.env` for the included Docker database. The commands above do not reset the database or remove its volume. Open [http://localhost:5173](http://localhost:5173); the API runs at `http://localhost:3000`. The seed is idempotent and creates the Montreal Crew demo group without replacing existing groups.
 
-Add this connection string to `.env` when using the included Docker database:
+The default `PAYPAL_MODE=mock` is for UI and orchestration demos and **does not capture money**. The AI purchasing assistant needs a configured model provider; the simpler item-allocation preview can use the mock interpreter when AI is not configured.
+
+### Optional AI provider
+
+Keep the API key server-side in `.env.local`. The configured provider must support OpenAI-compatible chat completions with structured JSON output. The Pay & Track coordinator also needs tool calling.
 
 ```text
-DATABASE_URL=postgres://whoosh:whoosh@localhost:5432/whoosh
+AI_PROVIDER=openai-compatible
+AI_BASE_URL=https://api.meta.ai/v1
+AI_MODEL=muse-ember-1.0
+AI_REASONING_EFFORT=minimal
+AI_API_KEY=<your server-side key>
 ```
 
-<details>
-<summary><strong>Useful commands</strong></summary>
+Local Qwen through LM Studio remains an alternative: point `AI_BASE_URL` to `http://127.0.0.1:1234/v1`, set `AI_MODEL` to the loaded model identifier, and set the provider's local API key if required. Direct named-dollar contributions are validated locally and do not need the model. Optional ElevenLabs speech transcription uses `ELEVENLABS_API_KEY` and `VOICE_TRANSCRIPTION_ENABLED=true`; typing always remains available.
 
-<br />
+### Optional PayPal Sandbox
 
-```bash
+Use credentials from a **Sandbox Business** account only. Never use production credentials or endpoints for this prototype.
+
+```text
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID=<Sandbox REST app client ID>
+PAYPAL_CLIENT_SECRET=<Sandbox REST app secret>
+PAYPAL_MERCHANT_ID=<Sandbox Business merchant ID>
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+PAYPAL_RETURN_ORIGIN=http://localhost:5173
+```
+
+Each participant needs a separate Sandbox Personal account and should approve their own order in an isolated browser session. Invitation links are bearer links, **not proof of identity**. The server records the payer returned by PayPal and checks the expected merchant, amount, currency, and purchase identifiers, but cannot prove that a named group member owns the buyer account.
+
+## Demo flow
+
+1. Open the Northline checkout and select a saved group of four active members.
+2. Describe who shares each receipt item, or provide four exact contributions. Preview and verify the **US$1,284.00** reconciliation.
+3. Review the split and generate participant links. Every participant approves their allocation; standing permissions alone do not count as purchase consent.
+4. In Sandbox mode, each participant separately opens PayPal, approves their order, and returns to WHOOSH. Pay & Track counts **verified captures only**. Never retry an uncertain charge blindly.
+5. Once all four shares are verified, use **Confirm simulated booking** to demonstrate the separate Northline acknowledgment. This is not a real reservation.
+6. If a checkout is partially funded and must be cancelled, use the recovery controls. A share is shown as refunded only after provider verification.
+
+The AI assistant may prepare a proposal and hand it to the same human-approved checkout; it never charges a buyer. The Pay & Track Agent is read-only and derives payment facts from persisted WHOOSH records.
+
+## Checks
+
+```powershell
 npm run typecheck
+npm test
+npx vitest run apps/web/src
+npm run lint --workspace=@whoosh/web
 npm run build
-npm run db:migrate
-npm run dev:api
-npm run dev:web
-npm run test --workspace=@whoosh/api
 ```
 
-</details>
+Database-backed tests require the **separate `whoosh_test` database** and `WHOOSH_DB_INTEGRATION=1`. They verify the target database name before creating test fixtures. Do not point them at the development `whoosh` database.
 
-## What V1 is not
+## Security and status
 
-WHOOSH is a product concept and developer sandbox, not a payment service. It does not have user accounts, identity verification, card or bank connections, real payment rails, notifications, or production money movement. A browser-local demo-group ID keeps sandbox sessions separate; it is not an authorization system.
-
-## Deploy
-
-WHOOSH deploys as one Vercel project: the web app calls same-origin `/api/*`, which Vercel routes to the Express handler. PostgreSQL is the only external dependency; Neon Postgres is a good fit.
-
-1. Create a Neon project and copy its pooled and direct connection strings.
-2. Import this repository into Vercel, using the repository root as the project root.
-3. Set `DATABASE_URL` to the pooled string and `DATABASE_URL_UNPOOLED` to the direct string.
-4. Deploy, then check `/api/health`.
-
-For a split frontend/API deployment, configure `CORS_ORIGIN` and `VITE_API_URL`. Keep database URLs server-side—never put one in a `VITE_` variable.
-
----
-
-<div align="center">
-
-Built as an exploration of a more native way to handle shared expenses.
-
-</div>
+This prototype lacks authenticated organizer and participant accounts. Browser-supplied member IDs, contact emails, and bearer invitation links are not identity credentials. Do not expose payment, approval, refund, or status routes to untrusted users. The local Northline adapter, booking acknowledgment, saved permissions, and older CAD wallet are simulations; only provider-verified Sandbox captures and refunds represent Sandbox payment results. Production use would require real authentication, merchant integration, operational monitoring, and a separately reviewed payment design.

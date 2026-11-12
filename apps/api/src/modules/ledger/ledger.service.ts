@@ -38,6 +38,7 @@ export async function postJournalInTransaction(
   const accounts = await transaction
     .select({
       id: ledgerAccounts.id,
+      currency: ledgerAccounts.currency,
     })
     .from(ledgerAccounts)
     .where(
@@ -50,6 +51,7 @@ export async function postJournalInTransaction(
   if (accounts.length !== new Set(accountIds).size) {
     throw new TypeError('Every ledger entry must use an existing account')
   }
+  assertEntryAccountCurrencies(validatedJournal.entries, accounts)
 
   const [draftJournal] = await transaction
     .insert(ledgerJournals)
@@ -122,6 +124,7 @@ export function assertJournalBalanced(entries: LedgerEntryInput[]): void {
   if (entries.length < 2) {
     throw new TypeError('A journal needs at least two entries')
   }
+  if (new Set(entries.map((entry) => entry.currency)).size !== 1) throw new TypeError('A journal must use one currency')
 
   const debitTotal = getTotal(entries, 'debit')
   const creditTotal = getTotal(entries, 'credit')
@@ -130,6 +133,12 @@ export function assertJournalBalanced(entries: LedgerEntryInput[]): void {
     throw new TypeError(
       `Journal is unbalanced: debits=${debitTotal}, credits=${creditTotal}`,
     )
+  }
+}
+
+export function assertEntryAccountCurrencies(entries: LedgerEntryInput[], accounts: Array<{ id: string; currency: string }>): void {
+  if (entries.some((entry) => accounts.find((account) => account.id === entry.accountId)?.currency !== entry.currency)) {
+    throw new TypeError('Ledger entry currency must match its account currency')
   }
 }
 

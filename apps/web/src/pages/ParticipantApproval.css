@@ -1,0 +1,18 @@
+.participant-approval-page .maya-header { justify-content: center; }
+.participant-approval-page .maya-content { padding-bottom: 48px; }
+.participant-specific-name { margin: -5px 0 18px; color: #397f52; font-weight: 750; }
+.participant-approval-page .maya-share-card header { display: flex; justify-content: space-between; }
+.participant-items { display: grid; gap: 7px; }
+.participant-actions { display: grid; gap: 12px; }
+.participant-actions button:disabled, .participant-withdraw:disabled { cursor: wait; opacity: .65; }
+.participant-links { margin-top: 30px; padding: 22px; border: 1px solid #dde1d8; border-radius: 16px; background: #fff; }
+.participant-links h2 { margin: 0 0 14px; font-size: 19px; }
+.participant-link-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #e4e6df; }
+.participant-link-row button { padding: 10px 13px; border: 1px solid #dce0d8; border-radius: 9px; background: #fff; color: #26332c; font-weight: 700; cursor: pointer; }
+.participant-links > p { margin: 14px 0 0; color: #7c837d; font-size: 13px; line-height: 1.4; }
+.participant-withdraw { margin-top: 15px; }
+@media (max-width: 500px) {
+  .participant-approval-page .maya-content { padding: 28px 20px 48px; }
+  .participant-link-row { align-items: flex-start; flex-direction: column; }
+  .participant-link-row button { width: 100%; }
+}

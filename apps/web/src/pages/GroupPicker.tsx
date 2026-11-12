@@ -1,0 +1,25 @@
+import { WhooshLogo } from '../components/WhooshLogo'
+import { useEffect, useState } from 'react'
+import { createPersistentCheckoutSession, createPersistentGroup, listPersistentGroups, type PersistentGroupSummary } from '../api/whoosh'
+import type { NorthlineCart } from '../demo/northline'
+import { orderCheckoutGroups } from './group-picker-order'
+
+const PAGE_SIZE = 8
+
+export function GroupPicker({ cart, onBack, onContinue }: { cart: NorthlineCart; onBack: () => void; onContinue: (groupId: string, sessionId: string) => void }) {
+  const [groups, setGroups] = useState<PersistentGroupSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('recommended')
+  const [shown, setShown] = useState(PAGE_SIZE)
+
+  useEffect(() => { listPersistentGroups().then(setGroups).catch(() => setError('Could not load saved groups. Please refresh and try again.')).finally(() => setLoading(false)) }, [])
+  const visible = orderCheckoutGroups(groups, search, sort)
+  const duplicateNames = new Set(groups.filter((group) => groups.some((other) => other.id !== group.id && other.name === group.name)).map((group) => group.name))
+  const choose = async (group: PersistentGroupSummary) => { setBusy(true); setError(''); try { const session = await createPersistentCheckoutSession(group.id, cart, crypto.randomUUID()); onContinue(group.id, session.id) } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not begin this group checkout.') } finally { setBusy(false) } }
+  const create = async () => { const name = window.prompt('Group name'); const people = window.prompt('Members, comma-separated. Include Jamie first.'); if (!name || !people) return; setBusy(true); setError(''); try { const group = await createPersistentGroup(name, people.split(',')); const summary = { id: group.group.id, name: group.group.name, currency: group.group.currency, memberCount: group.members.length, purchaseCount: 0, activeCheckoutCount: 0 }; setGroups((current) => [summary, ...current]); await choose(summary) } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not create group.') } finally { setBusy(false) } }
+
+  return <main className="split-page group-picker-page"><header className="merchant-header"><button className="whoosh-brand brand-button" onClick={onBack} type="button"><WhooshLogo /></button><p className="brand-tagline">Split now. Not later.</p><div className="group-profile"><strong>Your groups</strong><span>YC</span></div></header><section className="group-picker-shell"><button className="text-button" type="button" onClick={onBack}>← Back to Northline checkout</button><div className="group-picker-heading"><div><p className="trip-kicker">NORTHLINE CART SYNCED</p><h1>Choose your group</h1><p className="trip-subtitle">Select the people sharing this {cart.currency} checkout.</p></div><button className="manual-button" type="button" disabled={busy} onClick={create}>Create a group</button></div><div className="group-picker-toolbar"><label><span className="sr-only">Search groups</span><input type="search" placeholder="Search groups or reference" value={search} onChange={(event) => { setSearch(event.target.value); setShown(PAGE_SIZE) }} /></label><label><span className="sr-only">Sort groups</span><select value={sort} onChange={(event) => { setSort(event.target.value); setShown(PAGE_SIZE) }}><option value="recommended">Most relevant</option><option value="name">Name A–Z</option></select></label></div>{loading ? <p className="group-picker-state" role="status">Loading saved groups…</p> : error && groups.length === 0 ? null : groups.length === 0 ? <p className="group-picker-state">No saved groups yet. Create one to continue.</p> : visible.length === 0 ? <p className="group-picker-state">No groups match “{search}”. Try another name or reference.</p> : <><p className="group-picker-count">{visible.length} {visible.length === 1 ? 'group' : 'groups'} available</p><div className="group-picker-list">{visible.slice(0, shown).map((group) => <article className="group-picker-row" key={group.id}><div><strong>{group.name}</strong>{duplicateNames.has(group.name) && <small>Ref {group.id.slice(0, 8)}</small>}<p>{group.memberCount} members · {group.purchaseCount} {group.purchaseCount === 1 ? 'purchase' : 'purchases'}{group.activeCheckoutCount > 0 && <> · {group.activeCheckoutCount} active {group.activeCheckoutCount === 1 ? 'checkout' : 'checkouts'}</>}</p></div><button className="preview-button" type="button" disabled={busy} onClick={() => void choose(group)}>Continue <span aria-hidden="true">→</span></button></article>)}</div>{visible.length > shown && <button className="group-picker-more" type="button" onClick={() => setShown((count) => count + PAGE_SIZE)}>Show more groups ({visible.length - shown} remaining)</button>}</>}{error && <p className="sandbox-notice" role="alert">{error}</p>}</section></main>
+}

@@ -3,6 +3,7 @@ import { pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-
 import { users } from './users.js'
 
 export const groupMemberStatus = pgEnum('group_member_status', ['active', 'archived'])
+export const groupMemberRole = pgEnum('group_member_role', ['host', 'member'])
 
 export const groups = pgTable('groups', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -26,6 +27,8 @@ export const groupMembers = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
     status: groupMemberStatus('status').notNull().default('active'),
+    role: groupMemberRole('role').notNull().default('member'),
+    contactEmail: varchar('contact_email', { length: 320 }),
     joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
   },

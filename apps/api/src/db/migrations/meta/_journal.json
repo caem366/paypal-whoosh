@@ -15,6 +15,62 @@
       "when": 1787963217700,
       "tag": "0001_short_nextwave",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791460800000,
+      "tag": "0002_persistent_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791550000000,
+      "tag": "0003_participant_funding_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0004_independent_payment_commitments",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794000000000,
+      "tag": "0005_independent_refunds",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794099200000,
+      "tag": "0006_participant_approval_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794185600000,
+      "tag": "0007_group_contact_emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794272000000,
+      "tag": "0008_merchant_booking",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794358400000,
+      "tag": "0009_ai_purchase_proposals",
+      "breakpoints": true
     }
   ]
 }

@@ -1,16 +1,16 @@
 import { addGroupMember, createGroup, fundMemberWallet } from '../groups/groups.service.js'
 
 const DEMO_MEMBERS = [
-  { name: 'Avery Chen', balanceCents: 50_000 },
-  { name: 'Jordan Bell', balanceCents: 36_000 },
-  { name: 'Morgan Rivera', balanceCents: 28_000 },
-  { name: 'Sam Patel', balanceCents: 42_000 },
+  { name: 'Jamie Cooper', balanceCents: 65_000 },
+  { name: 'Alex Chen', balanceCents: 35_000 },
+  { name: 'Jordan Ellis', balanceCents: 30_000 },
+  { name: 'Maya Patel', balanceCents: 28_400 },
 ]
 
 /** Creates a fresh, fictional group. No production payment accounts are involved. */
 export async function createSandboxSession() {
   const created = await createGroup({
-    name: 'WHOOSH Sandbox Group',
+    name: 'Montreal crew',
     creatorName: DEMO_MEMBERS[0]!.name,
   })
 

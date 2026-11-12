@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { assertIntegerCents } from '@whoosh/shared'
 
@@ -70,6 +70,7 @@ export async function processSettlement(input: ProcessSettlementInput) {
   const simulation = input.simulation ?? 'success'
 
   return db.transaction(async (transaction) => {
+    await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`settlement:${input.settlementId}`}))`)
     const [foundSettlement] = await transaction
       .select()
       .from(settlements)
@@ -164,6 +165,8 @@ export async function processSettlement(input: ProcessSettlementInput) {
       settlement.debtorMemberId,
       'member_wallet',
     )
+
+    await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`wallet:${settlement.groupId}:${settlement.debtorMemberId}`}))`)
 
     const debtorPayable = findMemberAccount(
       settlement.debtorMemberId,

@@ -13,14 +13,16 @@
     "build": "npm run build --workspace=@whoosh/shared && npm run build --workspace=@whoosh/api && npm run build --workspace=@whoosh/web && npm run bundle:api",
     "bundle:api": "node scripts/bundle-api.mjs",
     "typecheck": "npm run typecheck --workspace=@whoosh/shared && npm run typecheck --workspace=@whoosh/api && npm run typecheck --workspace=@whoosh/web",
+    "test": "npm run test --workspace=@whoosh/shared && npm run test --workspace=@whoosh/api",
     "db:migrate": "npm run db:migrate --workspace=@whoosh/api"
+    ,"db:seed": "npm run db:seed --workspace=@whoosh/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "typescript": "~6.0.2"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22 <24"
   },
   "dependencies": {
     "@neon/config": "^1.3.0",

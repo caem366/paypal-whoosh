@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import {
   assertIntegerCents,
@@ -69,8 +69,9 @@ export function buildSettlementPlan(
 
 export async function getPostedWalletBalance(
   accountId: string,
+  query: typeof db | DatabaseTransaction = db,
 ): Promise<number> {
-  const entries = await db
+  const entries = await query
     .select({
       direction: ledgerEntries.direction,
       amountCents: ledgerEntries.amountCents,
@@ -102,6 +103,7 @@ export async function getPostedWalletBalance(
 
 export async function validateSandboxTransaction(
   input: CreateSandboxTransactionInput,
+  query: typeof db | DatabaseTransaction = db,
 ): Promise<{
   payerWalletAccountId: string
   allocations: AllocationPlan[]
@@ -115,7 +117,7 @@ export async function validateSandboxTransaction(
     input.participantMemberIds,
   )
 
-  const [group] = await db
+  const [group] = await query
     .select({ id: groups.id })
     .from(groups)
     .where(eq(groups.id, input.groupId))
@@ -129,7 +131,7 @@ export async function validateSandboxTransaction(
     ...new Set([input.payerMemberId, ...input.participantMemberIds]),
   ]
 
-  const members = await db
+  const members = await query
     .select({
       id: groupMembers.id,
     })
@@ -148,7 +150,7 @@ export async function validateSandboxTransaction(
     )
   }
 
-  const [payerWallet] = await db
+  const [payerWallet] = await query
     .select({
       id: ledgerAccounts.id,
     })
@@ -166,7 +168,7 @@ export async function validateSandboxTransaction(
     throw new TypeError('Payer wallet account not found')
   }
 
-  const availableCents = await getPostedWalletBalance(payerWallet.id)
+  const availableCents = await getPostedWalletBalance(payerWallet.id, query)
 
   if (availableCents < input.totalCents) {
     throw new TypeError(
@@ -248,9 +250,9 @@ export async function createTransactionRecordsInTransaction(
 export async function createSandboxTransaction(
   input: CreateSandboxTransactionInput,
 ) {
-  const validated = await validateSandboxTransaction(input)
-
   return db.transaction(async (transaction) => {
+    await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`wallet:${input.groupId}:${input.payerMemberId}`}))`)
+    const validated = await validateSandboxTransaction(input, transaction)
     if (input.idempotencyKey) {
       const [existingTransaction] = await transaction
         .select()

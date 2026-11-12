@@ -9,10 +9,12 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.71.0",
     "@whoosh/shared": "file:../../packages/shared",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

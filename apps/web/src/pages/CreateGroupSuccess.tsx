@@ -1,0 +1,19 @@
+import { WhooshLogo } from '../components/WhooshLogo'
+import type { CreatedInvitee } from './CreatePersistentGroup'
+
+const tones = ['lavender', 'sand', 'blue', 'lime']
+const initials = (name: string) => name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+
+export function CreateGroupSuccess({ group, invitees, onBack, onView }: { group: { id: string; name: string }; invitees: CreatedInvitee[]; onBack: () => void; onView: () => void }) {
+  return <main className="split-page create-success-page">
+    <header className="merchant-header"><button className="whoosh-brand brand-button" onClick={onBack} type="button"><WhooshLogo /></button><p className="brand-tagline">Split now. Not later.</p><div className="group-profile"><strong>Your groups</strong><span>YC</span></div></header>
+    <div className="groups-utility"><button className="text-button" type="button" onClick={onBack}>← Back to groups</button><strong>CREATE A GROUP · CREATED</strong><button className="close-button" onClick={onBack} type="button" aria-label="Close">×</button></div>
+    <section className="create-success-shell"><header className="create-success-heading"><p className="trip-kicker">CREATE A GROUP / CREATION COMPLETE</p><h1>Better together.</h1><span>The group is created. The next step belongs to your people.</span></header>
+      <div className="create-success-grid"><article className="create-success-card"><span className="create-success-check">✓</span><p>NEW GROUP CREATED</p><h2>{group.name} is ready.</h2><span>You’re the Host. {invitees.length} member {invitees.length === 1 ? 'contact is' : 'contacts are'} saved. No invitation has been sent.</span><em>• {invitees.length} contact {invitees.length === 1 ? 'record' : 'records'} saved</em><hr />
+        <div className="create-success-members"><div><span className="person-avatar lime">JC</span><section><strong>Jamie Cooper</strong><small>You · automatically assigned</small></section><aside><b>Host</b><small>Not removable</small></aside></div>{invitees.map((invitee, index) => <div key={invitee.email}><span className={`person-avatar ${tones[index]}`}>{initials(invitee.name)}</span><section><strong>{invitee.name}</strong><small>{invitee.email}</small></section><aside><b>Contact saved</b><small>Unverified</small></aside></div>)}</div>
+        <aside className="create-success-note"><span>♢</span><div><strong>No payment permission granted.</strong><p>Saved contacts have not authorized any payment. Each participant must consent to a purchase and approve their own PayPal checkout.</p></div></aside><p className="create-success-disclaimer">This new group has no purchases or saved member permissions yet. They’ll appear here as your crew gets started.</p><button className="create-success-primary" type="button" onClick={onView}>View group <b>→</b></button><button className="create-success-secondary" type="button" onClick={onBack}>Back to groups</button></article>
+        <aside className="create-group-side"><article className="create-side-dark"><p>SAME CREW. NEXT PLAN.</p><h2>Good company. Your money, still yours.</h2><div><span className="person-avatar lime">JC</span>{invitees.slice(0, 3).map((invitee, index) => <span className={`person-avatar ${tones[index]}`} key={invitee.email}>{initials(invitee.name)}</span>)}</div><small>Keep your people, purchase history and agreed rules together. No need to rebuild the crew for every checkout.</small></article><article className="create-side-note"><h2>A group. Not a shared wallet.</h2><p>Host manages the group and invites, not other people’s money.</p><hr /><p>Members choose their own scoped payment permissions and can revoke anytime.</p><hr /><p>Saved rules help with future splits. They never authorize arbitrary spending.</p></article></aside>
+      </div>
+    </section>
+  </main>
+}

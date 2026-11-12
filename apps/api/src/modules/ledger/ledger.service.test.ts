@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { assertJournalBalanced } from './ledger.service.js'
+import { assertEntryAccountCurrencies, assertJournalBalanced } from './ledger.service.js'
 
 describe('ledger service', () => {
   it('accepts a balanced journal', () => {
@@ -58,5 +58,16 @@ describe('ledger service', () => {
         },
       ]),
     ).toThrow()
+  })
+  it('rejects equal debits and credits in different currencies', () => {
+    expect(() => assertJournalBalanced([
+      { accountId: 'expense', direction: 'debit', amountCents: 100, currency: 'USD' },
+      { accountId: 'clearing', direction: 'credit', amountCents: 100, currency: 'CAD' },
+    ])).toThrow('one currency')
+  })
+  it('rejects a USD entry posted to a CAD account', () => {
+    expect(() => assertEntryAccountCurrencies([
+      { accountId: 'expense', direction: 'debit', amountCents: 100, currency: 'USD' },
+    ], [{ id: 'expense', currency: 'CAD' }])).toThrow('currency must match')
   })
 })
